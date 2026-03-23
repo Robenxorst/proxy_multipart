@@ -1,0 +1,21 @@
+# Сервис внутри контейнера подключается по 8090 порту
+version: '3'
+
+services:
+  app1:
+    build: .
+    container_name: proxy_multipart
+    restart: always
+    logging:
+     driver: "json-file"
+     options:
+       max-size: "20m"
+       max-file: "3"
+    ports:
+      - "8091:8091"
+    environment:
+      - TARGET_URL=${TARGET_URL}
+      - AUTH_TOKEN=${AUTH_TOKEN}
+      - URL_BTI=${URL_BTI}
+      - AUTH_BTI=${AUTH_BTI}
+      - THRESHOLD=${THRESHOLD}
