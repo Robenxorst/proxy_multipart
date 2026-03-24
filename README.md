@@ -1,55 +1,134 @@
-# proxy_multipart
+# 🚀 Multi-Service Integration & NLP Processing API
 
-**Портал поставщиков 4me**
+Production-ready FastAPI service that combines multiple independent business use-cases into a single deployable microservice due to infrastructure constraints.
 
-Сервис работает как прослойка между `JSON форматом`, который шлет робот, и `multipart:form-data`, который принимает БД 4me Портала Поставщиков. Решает проблему невозможности отправки данных через `form-data` из тела робота. Для данного метода используется endpoint `/proxy` .
+## 📌 Overview
+This service aggregates three independent business solutions:
+1) Integration proxy for external API (4me);
+2) JSON field translation (RU → EN) for external system (BTI);
+3) NLP-based address matching (MosAvtoDor project)
 
-Алгоритм работы сервиса:
-1) Получение POST запроса с `JSON` форматом из ГП Портал поставщиков(модуль интеграция с 4me);
-2) Отправка POST запроса в 4me с данными в формате `multipart:form-data` ;
-3) Обнаружение и парсинг поля `company` в полученном JSON файле ;
-4) Отправка ответа обратно в ГП с отредактированным JSON файлом;
+Although these components are logically independent, they are deployed as a single service due to time and infrastructure constraints.
 
-Изначально используем стенд QA, далее планируется использовать продовый URL(указаны в values GitLab)
+## Services
 
-Пример отправляемого в сервис запроса:
+**1. MosAvtoDor NLP Matching (`POST /mos_avto_dor`)**
+*📍 Problem*
+
+User provides address in free-form speech, which must be matched against a structured database.
+
+*⚙️ Solution*
+
+Implemented a rule-based NLP pipeline for address matching.
+
+*🧠 NLP Pipeline*
+- Text normalization (cleaning noise)
+- Lemmatization
+- Canonical transformation
+- Approximate string matching (RapidFuzz / Levenshtein)
+- Scoring + threshold decision
+
+*📤 Output:*
+`result` — match / no match;
+`address` — best match;
+`score` — similarity %;
+
+*Example:*
 ```
-curl -X POST http://localhost:8091/proxy   -H "Content-Type: application/json"   -d '{"user_id": 4940471}'
+curl -X POST -H "Content-Type: application/json" -d '{"address":"Я нахожусь на улице Бубнова, дом 13"}' http://0.0.0.0:8091/mos_avto_dor
 ```
-
-**Mos Gor BTI**
-
-Сервис переводит названия полей в API заказчика с Русского языка на Английский язык. Используется endpoint `/mos_gor_bti`. На вход принимается номер телефона, который состоит строго из 10 цифр. Иначе будет выведено сообщение об ошибке. Пример отправляемого GET запроса для получения данных по номеру телефона:
-```
-curl http://0.0.0.0:8091/mos_gor_bti?phone_number=9037206129
-```
-
-**МосАвтоДор**
-
-Бизнес задача: Определить принадлежность адреса, который говорит человек, региональным дорогам Московской Области.
-
-
-Сервис осуществляет проверку вхождения адреса, который говорит абонент, в Базу Данных заказчика (представлена в файле JSON). На вход endpoint `/mos_avto_dor` получает JSON с фразой абонента, а на выходе выдает JSON со `score`  - процент совпадения адреса с адресами из БД), `address` - лучшее совпадение адреса с БД заказчика, а так же `result` - значение True/False, определяющее принадлежит ли адрес абонента к БД заказчика (превышает ли score установленное значение `threshold`). `threshold` установлен на значении `80%` в переменных `Ci/Cd`. Сервис был запущен и протестирован на десятке возможных фраз(целевых и нецелевых).
-
-Алгоритм работы скрипта:
-1) Лемматизация (приведение слов к единому падежу) и нормализация (удаление лишних слов) фразы абонента.
-2) Загрузка данных из БД заказчика и их нормализация.
-3) Попарное сравнение нормализованной фразы абонента со строками из БД заказчика (функция `find_best_match`), определение наилучшего совпадения, 
-сравнение найденного `score` с `threshold`. Функция `find_best_match` использует вариации алгоритма Левенштейна из библиотеки `rapidfuzz`.
-4) Возвращение `responce` с результатами метчера в виде `JSON` .
-
-Пример входящего POST запроса:
-```
-curl -X POST -H "Content-Type: application/json" -d '{"address":"Я нахожусь на улице Фомичевой, дом 16"}' http://0.0.0.0:8091/mos_avto_dor
-```
-
-Пример ответа сервиса Мос Авто Дор:
+*Answer:*
 ```
 {"result":"False","address":"М-4 «Дон»- Михнево","score":"60.61"}
 ```
 
-**Важное замечание**: `JSON` с `road_map` должен содержать поля `original` и `normalized` в обязательном порядке!
-Поле `normalized` получается за счет прогона оригинальной колонки из предоставленного заказчиком Excel через функцию `normalize`
-из `avto_dor_matcher.py`.
+**2. 4me Integration Proxy (`POST /proxy`)**
+*📍 Problem*
+Voice assistants operate with JSON only, while the external API (4me) requires multipart/form-data.
 
-**Дальнейшие доработки по проекту**: перевод алгоритма с `fuzzy matching` на основании расстояния Левенштейна на механику `embeddings` + косинусное сходство .
+*⚙️ Solution*
+Implemented a proxy service that:
+1) Accepts `JSON` requests from the voice assistant.
+2) Converts them into `multipart/form-data`.
+3) Sends requests to `4me API`.
+4) Parses and normalizes response.
+
+*Key logic*
+- Async API communication via `httpx`;
+- Data transformation (JSON ↔ form-data);
+- Company field extraction and cleanup;
+- Error handling and logging;
+
+**3. BTI JSON Translator (`GET /mos_gor_bti`)**
+
+*📍 Problem*
+External API returns JSON with **Cyrillic field names**, which are not compatible with downstream systems.
+
+*⚙️ Solution*
+Implemented a recursive JSON transformer that:
+1) Fetches data by phone number.
+2) Translates field names from Russian to English.
+3) Preserves nested JSON structure.
+
+*Key logic*
+- Recursive traversal of JSON (dict / list);
+- Key mapping (RU → EN);
+- Async API integration;
+
+## Architecture
+
+```
+            Voice Assistant
+                    ↓
+             FastAPI Service
+     ┌────────────┬────────────┬────────────┐
+     │   4me API  │   BTI API  │ Address DB │
+     └────────────┴────────────┴────────────┘
+```
+## Tech Stack
+
+- Python 3.x;
+- FastAPI;
+- httpx (async HTTP client);
+- RapidFuzz (string similarity);
+- Docker / Docker Compose;
+
+## 🔮 Future Improvements
+
+*NLP pipeline:* Replace Levenshtein with `embeddings + cosine similarity` and `semantic search`.
+
+*Architecture:* 
+- Split into independent services;
+- Add API gateway layer;
+
+*General:*
+- Add monitoring & metrics;
+- Improve error observability;
+
+## ▶️ Run Locally
+
+```
+git clone git@github.com:Robenxorst/proxy_multipart.git
+cd proxy_multipart
+```
+
+Before running the service, create a `.env` file:
+```
+touch .env
+```
+
+Fill in the required environment variables:
+```
+AUTH_TOKEN=your_token_here
+TARGET_URL=https://api.example.com
+URL_BTI=https://bti.example.com
+AUTH_BTI=your_basic_auth_here
+THRESHOLD=80
+```
+
+⚠️ Dont commit `.env` to the repository.
+
+Build and run service:
+```
+docker-compose up --build
+```
