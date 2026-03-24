@@ -10,9 +10,10 @@ This service aggregates three independent business solutions:
 
 Although these components are logically independent, they are deployed as a single service due to time and infrastructure constraints.
 
-## Services
+## 🧩 Services
 
 **1. MosAvtoDor NLP Matching (`POST /mos_avto_dor`)**
+
 *📍 Problem*
 
 User provides address in free-form speech, which must be matched against a structured database.
@@ -29,6 +30,7 @@ Implemented a rule-based NLP pipeline for address matching.
 - Scoring + threshold decision
 
 *📤 Output:*
+
 `result` — match / no match;
 `address` — best match;
 `score` — similarity %;
@@ -43,7 +45,9 @@ curl -X POST -H "Content-Type: application/json" -d '{"address":"Я нахожу
 ```
 
 **2. 4me Integration Proxy (`POST /proxy`)**
+
 *📍 Problem*
+
 Voice assistants operate with JSON only, while the external API (4me) requires multipart/form-data.
 
 *⚙️ Solution*
@@ -62,6 +66,7 @@ Implemented a proxy service that:
 **3. BTI JSON Translator (`GET /mos_gor_bti`)**
 
 *📍 Problem*
+
 External API returns JSON with **Cyrillic field names**, which are not compatible with downstream systems.
 
 *⚙️ Solution*
