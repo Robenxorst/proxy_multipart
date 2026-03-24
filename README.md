@@ -51,6 +51,7 @@ curl -X POST -H "Content-Type: application/json" -d '{"address":"Я нахожу
 Voice assistants operate with JSON only, while the external API (4me) requires multipart/form-data.
 
 *⚙️ Solution*
+
 Implemented a proxy service that:
 1) Accepts `JSON` requests from the voice assistant.
 2) Converts them into `multipart/form-data`.
