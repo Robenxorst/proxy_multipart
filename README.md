@@ -1,4 +1,4 @@
-# 🚀 Multi-Service Integration & NLP Processing API
+# Multi-Service Integration & NLP Processing API
 
 Production-ready FastAPI service that combines multiple independent business use-cases into a single deployable microservice due to infrastructure constraints.
 
