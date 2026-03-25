@@ -58,7 +58,7 @@ Implemented a proxy service that:
 3) Sends requests to `4me API`.
 4) Parses and normalizes response.
 
-*Key logic*
+*🛠️ Key logic*
 - Async API communication via `httpx`;
 - Data transformation (JSON ↔ form-data);
 - Company field extraction and cleanup;
@@ -76,7 +76,7 @@ Implemented a recursive JSON transformer that:
 2) Translates field names from Russian to English.
 3) Preserves nested JSON structure.
 
-*Key logic*
+*🛠️ Key logic*
 - Recursive traversal of JSON (dict / list);
 - Key mapping (RU → EN);
 - Async API integration;
@@ -91,7 +91,9 @@ Implemented a recursive JSON transformer that:
 
 ## 🔮 Future Improvements
 
-*NLP pipeline:* Replace Levenshtein with `embeddings + cosine similarity` and `semantic search`.
+*NLP pipeline:* 
+
+Replace Levenshtein with `embeddings + cosine similarity` and `semantic search`.
 
 *Architecture:* 
 - Split into independent services;
