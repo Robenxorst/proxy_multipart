@@ -81,16 +81,6 @@ Implemented a recursive JSON transformer that:
 - Key mapping (RU → EN);
 - Async API integration;
 
-## Architecture
-
-```
-            Voice Assistant
-                    ↓
-             FastAPI Service
-     ┌────────────┬────────────┬────────────┐
-     │   4me API  │   BTI API  │ Address DB │
-     └────────────┴────────────┴────────────┘
-```
 ## Tech Stack
 
 - Python 3.x;
