@@ -71,6 +71,7 @@ Implemented a proxy service that:
 External API returns JSON with **Cyrillic field names**, which are not compatible with downstream systems.
 
 *⚙️ Solution*
+
 Implemented a recursive JSON transformer that:
 1) Fetches data by phone number.
 2) Translates field names from Russian to English.
